@@ -6,22 +6,21 @@ import random
 
 def extract_objects(image, bad_pixel_fn):
     objects = []
+    pixels_to_search = set()
     for x_loc in range(len(image)):
         for y_loc in range(len(image[x_loc])):
-            if bad_pixel_fn(image[x_loc][y_loc]):
-                pixel_in_found_object = False
-                for obj in objects:
-                    if (
-                            x_loc >= obj['min_x'] and
-                            x_loc <= obj['max_x'] and
-                            y_loc >= obj['min_y'] and
-                            y_loc <= obj['max_y']
-                    ):
-                        pixel_in_found_object = True
-                if not pixel_in_found_object:
-                    maybe_object = find_object(image, x_loc, y_loc, bad_pixel_fn)
-                    if maybe_object:
-                        objects.append(maybe_object)
+            pixels_to_search.add((x_loc, y_loc))
+    while pixels_to_search:
+        pixel_to_search = pixels_to_search.pop()
+        x_loc = pixel_to_search[0]
+        y_loc = pixel_to_search[1]
+        if bad_pixel_fn(image[x_loc][y_loc]):
+            maybe_object = find_object(image, x_loc, y_loc, bad_pixel_fn)
+            if maybe_object:
+                objects.append(maybe_object)
+                for remove_x in range(maybe_object['min_x'], maybe_object['max_x'] + 1):
+                    for remove_y in range(maybe_object['min_y'], maybe_object['max_y'] + 1):
+                        pixels_to_search.discard((remove_x, remove_y))
     return objects
 
 
@@ -80,14 +79,14 @@ def main():
 
     
     image = []
-    for x in range(1024):
+    for x in range(2048):
         row = []
-        for y in range(2048):
+        for y in range(4096):
             if random.random() < .001:
                 row.append(0)
             else:
                 row.append(1)
-        print ''.join(map(str, row))
+        #print ''.join(map(str, row))
         image.append(row)
     
     
@@ -104,5 +103,6 @@ def main():
 if __name__ == '__main__':
     main()
     
+
 
 
