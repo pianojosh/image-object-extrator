@@ -1,17 +1,16 @@
-
-
 #!/usr/bin/env python
 
 import random
 
 def extract_objects(image, bad_pixel_fn):
     objects = []
-    pixels_to_search = set()
+    pixels_to_scan = set()
     for x_loc in range(len(image)):
         for y_loc in range(len(image[x_loc])):
-            pixels_to_search.add((x_loc, y_loc))
-    while pixels_to_search:
-        pixel_to_search = pixels_to_search.pop()
+            pixels_to_scan.add((x_loc, y_loc))
+    while pixels_to_scan:
+        #print "There are %d pixels remaining to scan" % (len(pixels_to_scan))
+        pixel_to_search = pixels_to_scan.pop()
         x_loc = pixel_to_search[0]
         y_loc = pixel_to_search[1]
         if bad_pixel_fn(image[x_loc][y_loc]):
@@ -20,15 +19,12 @@ def extract_objects(image, bad_pixel_fn):
                 objects.append(maybe_object)
                 for remove_x in range(maybe_object['min_x'], maybe_object['max_x'] + 1):
                     for remove_y in range(maybe_object['min_y'], maybe_object['max_y'] + 1):
-                        pixels_to_search.discard((remove_x, remove_y))
+                        pixels_to_scan.discard((remove_x, remove_y))
     return objects
 
 
 def find_object(image, start_x_loc, start_y_loc, bad_pixel_fn):
-    searched_pixels = set()
-    bad_pixels = set()
-    found_objects = []
-    search_object(image, searched_pixels, bad_pixels, start_x_loc, start_y_loc, bad_pixel_fn)
+    bad_pixels = search_object(image, start_x_loc, start_y_loc, bad_pixel_fn)
     if (bad_pixels):
         object_min_x = start_x_loc
         object_min_y = start_y_loc
@@ -51,24 +47,29 @@ def find_object(image, start_x_loc, start_y_loc, bad_pixel_fn):
         }
 
 
-def search_object(image, searched_pixels, bad_pixels, x_loc, y_loc, bad_pixel_fn):
-    if (x_loc, y_loc) in searched_pixels:
-        return
-    searched_pixels.add((x_loc, y_loc))
-    if bad_pixel_fn(image[x_loc][y_loc]):
-        bad_pixels.add((x_loc, y_loc))
-        for search_x_offset in range(-2, 3):
-            search_x_loc = x_loc + search_x_offset
-            if search_x_loc >= 0 and search_x_loc < len(image):
-                for search_y_offset in range(-2, 3):
-                    search_y_loc = y_loc + search_y_offset
-                    if search_y_loc >= 0 and search_y_loc < len(image[search_x_loc]):
-                        search_object(image,
-                                      searched_pixels,
-                                      bad_pixels,
-                                      search_x_loc,
-                                      search_y_loc,
-                                      bad_pixel_fn)
+def search_object(image, start_x_loc, start_y_loc, bad_pixel_fn):
+    pixels_to_search = set()
+    searched_pixels = set()
+    bad_pixels = set()
+    pixels_to_search.add((start_x_loc, start_y_loc))
+    
+    while pixels_to_search:
+        #print 'Looking for an object, there are %d pixels left to search, and we have already searched %d pixels, and have found %d bad pixels' % (len(pixels_to_search), len(searched_pixels), len(bad_pixels))
+        pixel_to_search = pixels_to_search.pop()
+        x_loc = pixel_to_search[0]
+        y_loc = pixel_to_search[1]
+        searched_pixels.add((x_loc, y_loc))
+        if bad_pixel_fn(image[x_loc][y_loc]):
+            bad_pixels.add((x_loc, y_loc))
+            for search_x_offset in range(-2, 3):
+                search_x_loc = x_loc + search_x_offset
+                if search_x_loc >= 0 and search_x_loc < len(image):
+                    for search_y_offset in range(-2, 3):
+                        search_y_loc = y_loc + search_y_offset
+                        if search_y_loc >= 0 and search_y_loc < len(image[search_x_loc]):
+                            if (search_x_loc, search_y_loc) not in searched_pixels:
+                                pixels_to_search.add((search_x_loc, search_y_loc))
+    return bad_pixels
     
     
 def main():
@@ -79,10 +80,10 @@ def main():
 
     
     image = []
-    for x in range(2048):
+    for x in range(2000):
         row = []
-        for y in range(4096):
-            if random.random() < .001:
+        for y in range(4000):
+            if random.random() < .05:
                 row.append(0)
             else:
                 row.append(1)
