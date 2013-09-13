@@ -2,41 +2,28 @@
 
 #!/usr/bin/env python
 
-IMAGE = [
-    [1,1,1,0,0,1,1,1,1,0,0,1],
-    [0,1,1,1,0,0,1,1,0,0,1,0],
-    [1,1,1,0,1,1,1,1,1,0,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,0,1,1,1,1,0],
-    [1,1,1,1,1,1,1,1,1,1,1,0],
-    [0,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-    [0,0,0,0,0,1,1,1,1,1,0,0],
-    [1,1,1,1,1,1,1,1,1,1,1,0],
-    [0,0,0,1,1,1,1,1,0,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,0,1,1,1,1,1],
-]
-
+import random
 
 def extract_objects(image, bad_pixel_fn):
     objects = []
     for x_loc in range(len(image)):
         for y_loc in range(len(image[x_loc])):
-            pixel_in_found_object = False
-            for obj in objects:
-                if (
-                        x_loc >= obj['min_x'] and
-                        x_loc <= obj['max_x'] and
-                        y_loc >= obj['min_y'] and
-                        y_loc <= obj['max_y']
-                ):
-                    pixel_in_found_object = True
-            if not pixel_in_found_object:
-                maybe_object = find_object(image, x_loc, y_loc, bad_pixel_fn)
-                if maybe_object:
-                    objects.append(maybe_object)
+            if bad_pixel_fn(image[x_loc][y_loc]):
+                pixel_in_found_object = False
+                for obj in objects:
+                    if (
+                            x_loc >= obj['min_x'] and
+                            x_loc <= obj['max_x'] and
+                            y_loc >= obj['min_y'] and
+                            y_loc <= obj['max_y']
+                    ):
+                        pixel_in_found_object = True
+                if not pixel_in_found_object:
+                    maybe_object = find_object(image, x_loc, y_loc, bad_pixel_fn)
+                    if maybe_object:
+                        objects.append(maybe_object)
     return objects
+
 
 def find_object(image, start_x_loc, start_y_loc, bad_pixel_fn):
     searched_pixels = set()
@@ -85,15 +72,26 @@ def search_object(image, searched_pixels, bad_pixels, x_loc, y_loc, bad_pixel_fn
                                       bad_pixel_fn)
     
     
-
-
 def main():
 
     def is_bad_pixel(value):
         if value <= 0:
             return True
 
-    found_objects = extract_objects(IMAGE, is_bad_pixel)
+    
+    image = []
+    for x in range(1024):
+        row = []
+        for y in range(2048):
+            if random.random() < .001:
+                row.append(0)
+            else:
+                row.append(1)
+        print ''.join(map(str, row))
+        image.append(row)
+    
+    
+    found_objects = extract_objects(image, is_bad_pixel)
     for found_object in found_objects:
         print "found an object from (%d, %d) to (%d, %d)" % (
             found_object['min_x'],
